@@ -6,6 +6,7 @@ import argparse
 
 import yaml
 import netifaces
+import requests
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -14,6 +15,7 @@ import telegram.error
 
 
 DEFAULT_CONFIG_PATH = "/etc/vipbot.yaml"
+GET_IP_URL = "https://ipv4.wtfismyip.com/text"
 
 
 class VIPBot:
@@ -47,7 +49,8 @@ class VIPBot:
         bot.editMessageText(text=update.callback_query.message.text,
                             chat_id=update.callback_query.message.chat_id,
                             message_id=update.callback_query.message.message_id)
-        update.callback_query.message.reply_text(self._makeIpReply(), reply_markup=self._keyboard)
+        # update.callback_query.message.reply_text(self._makeIpReply(), reply_markup=self._keyboard)
+        update.callback_query.message.reply_text(self._getPublicIp(), reply_markup=self._keyboard)
 
     def _onError(self, bot, update, error):
         logging.warning("Update '{}' caused error '{}'".format(update, error))
@@ -61,6 +64,10 @@ class VIPBot:
         or "addr" not in addresses[netifaces.AF_INET][0]:
             return "Interface does not have associated IPv4 address: {}".format(self.interface)
         return self.IP_MESSAGE.format(ip=addresses[netifaces.AF_INET][0]["addr"])
+
+    def _getPublicIp(self):
+        r = requests.get(GET_IP_URL)
+        return r.text
 
     def run(self):
         self._updater.start_polling()
